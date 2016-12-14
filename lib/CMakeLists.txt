@@ -1,5 +1,5 @@
-set(tuplefunctor_sources
-  tuplefunctor.cpp)
+set(tupleutil_sources
+  tupleutil.cpp)
 
-add_library(tuplefunctor STATIC ${tuplefunctor_sources})
-target_include_directories(tuplefunctor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(tupleutil STATIC ${tupleutil_sources})
+target_include_directories(tupleutil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

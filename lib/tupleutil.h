@@ -1,6 +1,6 @@
-// tuplefunctor.h                                                     -*-C++-*-
-#ifndef INCLUDED_TUPLEFUNCTOR
-#define INCLUDED_TUPLEFUNCTOR
+// tupleutil.h                                                     -*-C++-*-
+#ifndef INCLUDED_TUPLEUTIL
+#define INCLUDED_TUPLEUTIL
 
 #include <iostream>
 #include <tuple>
@@ -8,7 +8,7 @@
 #include <new>
 #include <variant>
 
-namespace tuplefunctor {
+namespace tupleutil {
 
 template <typename... Args, std::size_t... I>
 constexpr
@@ -86,7 +86,7 @@ auto tuple_getters(std::tuple<Args...>) {
 }
 
 const auto get = [](size_t i, auto t) {
-    static auto tbl = tuplefunctor::tuple_getters(t);
+    static auto tbl = tupleutil::tuple_getters(t);
     return tbl[i](t);
 };
 
@@ -101,6 +101,6 @@ void print(std::ostream& os, std::tuple<Args...> const& tuple) {
 }
 
 
-}  // close namespace tuplefunctor
+}  // close namespace tupleutil
 
 #endif
