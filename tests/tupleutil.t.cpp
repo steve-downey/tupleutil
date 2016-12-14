@@ -6,7 +6,25 @@ using ::testing::Test;
 
 namespace testing {
 
-TEST(TupleTest, maketuple)
+TEST(TupleTest, for_each)
+{
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    double total = 0;
+
+    auto sum = [&total](size_t, auto el) {
+        total += el;
+        return 0;
+    };
+
+    tupleutil::tuple_for_each(t, sum);
+    EXPECT_EQ(4.3, total);
+
+    total = 0;
+    tupleutil::tuple_for_each(std::make_tuple(2, 3, 4), sum);
+    EXPECT_EQ(9.0, total);
+}
+
+TEST(TupleTest, transform)
 {
     constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
     auto arr = tupleutil::tuple_to_array(t);

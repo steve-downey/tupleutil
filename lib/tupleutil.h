@@ -28,16 +28,22 @@ tuple_to_array(std::tuple<Args...> const& tuple)
 }
 
 template <typename Func, typename Tuple, std::size_t... I>
-void tuple_for_each_impl(Tuple const& tuple,
-                         Func&&       f,
-                         std::index_sequence<I...>)
+void tuple_for_each_impl(Tuple&& tuple, Func&& f, std::index_sequence<I...>)
 {
-    auto swallow = {0, (std::forward<Func>(f)(I, std::get<I>(tuple)))...};
+    auto swallow = {0,
+                    (std::forward<Func>(f)(
+                        I, std::get<I>(std::forward<Tuple>(tuple))))...};
     (void)swallow;
 }
 
 template <typename Func, typename... Args>
 void tuple_for_each(std::tuple<Args...> const& tuple, Func&& f)
+{
+    tuple_for_each_impl(tuple, f, std::index_sequence_for<Args...>{});
+}
+
+template <typename Func, typename... Args>
+void tuple_for_each(std::tuple<Args...>&& tuple, Func&& f)
 {
     tuple_for_each_impl(tuple, f, std::index_sequence_for<Args...>{});
 }
