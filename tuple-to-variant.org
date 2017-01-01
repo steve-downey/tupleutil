@@ -34,17 +34,27 @@ So a slight digression into ADTs. Which in this case means Algebraic Data Types,
 
 * Tuple is Product, Variant is Sum
 
+** Products
+
 In algebra, we usually start out with addition. It's simpler. But for types, multiplication, or product, is in many ways much more natural. Your basic struct, record, etc is a natural product of types. A type is some kind of collection of things. And I'm being a bit vague here because this is right in the area where set seems like a good idea, and then we get into sets of sets, sets that might contain themselves, and barbers who shave all the people who don't shave themselves. There is rigour, but I don't really want to have to go there.
 
-But, if we start with the idea that a type is a collection of things, and that we dont look to closely at the infinites, we are not going to be terribly wrong. So a type is a way of describing if a thing is in or out of the collection.
+But, if we start with the idea that a type is a collection of things, and that we don't look to closely at the infinities, we are not going to be terribly wrong. So a type is a way of describing if a thing is in or out of the collection.
 
-Now, I could pretend we don't know what a struct is. Start with pairs, where there are no names of the components of the stuct, and build that up. But we all have a notion of struct. It's an ordered collection of types. The instances of the struct are all of the elements of each type contained in the struct, matched up with all of the other elements of all the other types in the struct. Known as the Cartesion product. So if you have a type A, and a type B, the collection of things in struct {A a; B b;} is the cross of As and Bs. That is {{a_{1}, b_{1}}, {a_{1}, b_{2}}, {a_{1}, b_{3}}, ... , {a_{2}, b_{1}}, {a_{2}, b_{2}}, ... {a_{n}, b_{1}}, ... {a_{n}, b_{m}}} is all of the elements that are part of the type struct {A a; B b;}. The cardinality of {A, B} is the product of the cardinalities of A and B.
+Now, I could pretend we don't know what a struct is. Start with pairs, where there are no names of the components of the struct, and build that up. But we all have a notion of struct. It's an ordered collection of types. The instances of the struct are all of the elements of each type contained in the struct, matched up with all of the other elements of all the other types in the struct. Known as the Cartesion product. So if you have a type A, and a type B, the collection of things in struct {A a; B b;} is the cross of As and Bs. That is {{a_{1}, b_{1}}, {a_{1}, b_{2}}, {a_{1}, b_{3}}, ... , {a_{2}, b_{1}}, {a_{2}, b_{2}}, ... {a_{n}, b_{1}}, ... {a_{n}, b_{m}}} is all of the elements that are part of the type struct {A a; B b;}. The cardinality of {A, B} is the product of the cardinalities of A and B.
 
-Structs are very natural in C++, but hard to deal with generically, so there's a type that does it all for you, std::tuple. However, getting at the parts of the tuple is a little more difficult that with a struct. You have to say std::get<0>(tuple), or std::get<int>(tuple). And the second might not even compile, if the tuple has more than one int. But you get tools for composing and decomposing tuples at compile time. And std::tuple lets you put pretty much any C++ type into the tuple, only restricting you when you try to, e.g. move a tuple that has an element that can't be moved.
+Structs are very natural in C++, but hard to deal with generically, so there's a type that does it all for you, std::tuple. Getting at the parts of the tuple is a little more difficult that with a struct. You have to say std::get<0>(tuple), or std::get<int>(tuple). And the second might not even compile, if the tuple has more than one int. But you get tools for composing and decomposing tuples at compile time. And std::tuple lets you put pretty much any C++ type into the tuple, only restricting you when you try to, e.g. move a tuple that has an element that can't be moved.
+
+There should also be a type that acts as a unit for the product, the equivalent of 1 for multiplication. The empty tuple can work as a unit. It contains any of the list of no types. This implies that all empty tuples are equivalent, so its cardinality is 1. There can be only one. The product of a type with the empty tuple is entirely equivalent to the the type itself. There are no additional elements in the type, and you can convert back and forth between them. They are isomorphic, having the same shape.
+
+Isomorphisms are important in talking about types, because most of the time we can't actually distinguish between isomorphic types, at least for proving things. The phrase "up to isomorphism" shows up a lot. To be isomorphic means that we can write a transformation $X$ from type A to type B, and a reverse transformation $Y$ from type B to type A, such that $Y(X(a)) == a$ for all a, and that for any function from a_{1} to a_{2}, there is an equivalent function from b_{1} to b_{2}. We could mechanically replace instances of a with the appropriate b and add calls to X and Y without changing the behavior of a program.
+
+** Sums
 
 The other basic algebraic type is the sum type. The corresponding primitive in C++ is a union, with one difference. In most type systems, the sum type automatically remembers which of the allowed types is in it. A union doesn't, so the standard technique is to embed the union in a struct that carries a tag saying which type in the union was most recently written, and can be read from. I'll be ignoring type-punning schemes allowing a read of a different type than was written.
 
 So a Sum type of type A and type B is the union of all of the things in A and all of the things in B. {a_{1}, a_{2}, a_{3}, ... , a_{n}, b_{1}, b_{2}, ... , b_{m}}. The cardinality of is the sum of the cardinalities of A and B.
+
+The unit type of the sum is equivalent to zero. The empty sum type, although a valid type, has no elements in the type. It's like the empty set. It's often known as Void, where the unit for product is often called Unit. It may also be known as Bottom, where that is a computation that never completes. Since there are no elements of the type Void, it can't be instantiated. And a product of Void and any other type is equivalent to Void. The c++ type src_C++[:exports code]{void} is related, but not exactly the same, because it also represents an empty argument list, a function that returns, but does not return any value (a subroutine), and is also functions as the universal pointer.
 
 C++17 recently standardized a sum type to go with the long standardized std::tuple, std::variant. Std::variant remembers which of the alternative types was last set. It is almost never empty, only so if a write into one of the alternatives threw an exception. It is not allowed to hold src_C++[:exports code]{void}, references, arrays, or to contain no types. This is a bit unfortunate, because except for src_C++[:exports code]{void} std::tuple can do all of those things.
 
@@ -52,13 +62,46 @@ There were several competing models for what std::variant should be, with variou
 
 One of the popular models for variant rises out of database-like interfaces. Even though databases are internally strongly typed, SQL queries are not. And the model of sending text over and getting some kind of response back makes it difficult to expose that to a host language. Particularly when the database schema may change, the query still be perfectly valid, but no longer return the same types. However, since we do know there is a relatively short list of permitted types in the database, a variant that allows just those types and the ability to query what type was returned can be quite useful, and not terribly hard to implement. There are JSON parsers taking similar approaches, only with the addition that a JSON type may have JSON objects contained in them recursively, and those have to be outside the object somehow, or the size of the object is unbounded.
 
-From the implementors point of view, supporting pointers and arrays is a huge amout of extra work. Not allowing an array to decay to a pointer is quite difficult. References have issues when treated generically. And the degenerate case of an empty variant was also difficult. If that needs to be represented, the type std::monostate has been introduced, which is a type designed to have exactly one item in it, so that all instances of std::monostate are identical. This is also the same as the unit type for product types. It's not an accident that it's represented in Haskell as (), which is the empty tuple. All empty lists are equivalent. It could have been src_C++[:exports code]{std::tuple<>}, but no one in the room happened to think of that.
+From the implementors point of view, supporting pointers and arrays is a huge amout of extra work. Not allowing an array to decay to a pointer is quite difficult. References have issues when treated generically. Not to mention that references have decidely odd semantics in the differences between construction and assignment. And the degenerate case of an empty variant was also difficult. If that needs to be represented, the type std::monostate has been introduced, which is a type designed to have exactly one item in it, so that all instances of std::monostate are identical. This is also the same as the unit type for product types. It's not an accident that it's represented in Haskell as (), which is the empty tuple. All empty lists are equivalent. It could have been src_C++[:exports code]{std::tuple<>}, but no one in the room happened to think of that.
+
 
 * Tuple is a Heterogenous Container, what is the iterator?
 
-The C++ standard says "tuples are heterogeneous, fixed-size collections of values" - [tuple.general]. Collections generally have iterator types associated with them, but that's a bit of a challenge since the iterator model in c++ assumes that for a collection, the type of *(Collection<T>::iterator) is T. But if the collection isn't on T, but on Types..., you doesn't quite work to say *(Collection<typename... Types>) is of type ...Types. You need something to hold that. And in many cases, std::variant can work. It doesn't quiet work, since we'd really need a variant of references to the types in the collection, so that they could be written to, but for many purposes we can come close. For the case I was looking at, making copies is perfectly fine. What I'm looking for is something roughly with the signature
+The C++ standard says "tuples are heterogeneous, fixed-size collections of values" - [tuple.general]. Collections generally have iterator types associated with them, but that's a bit of a challenge since the iterator model in C++ assumes that for a collection, the type of *(Collection<T>::iterator) is T. But if the collection isn't on T, but on Types..., you doesn't quite work to say *(Collection<typename... Types>) is of type ...Types. You need something to hold that. But in many cases, std::variant can work. It doesn't quiet work, since we'd really need a variant of references to the elements of the tuple, so that they could be written to. However, for many purposes we can come close. For the case I was looking at, making copies is perfectly fine. What I'm looking for is something roughly with the signature
 
 #+BEGIN_SRC C++ :exports code
 template <typename... Types
 auto getElement(size_t i, std::tuple<Types...> tuple) -> std::variant<Types...>;
+#+END_SRC
+
+That is, something that will get me the i_{th} element of a tuple, as a variant with the same typelist as the tuple, with the index determined at runtime. All of the normal accessors are compile time. So need to do something that will make the compile time information available at runtime.
+
+Start with something I do know how to do, the standard idiom for printing a tuple.
+#+BEGIN_SRC C++ :exports code
+
+template <typename Func, typename Tuple, std::size_t... I>
+void tuple_for_each_impl(Tuple&& tuple, Func&& f, std::index_sequence<I...>)
+{
+    auto swallow = {0,
+                    (std::forward<Func>(f)(
+                        I, std::get<I>(std::forward<Tuple>(tuple))))...};
+    (void)swallow;
+}
+
+template <typename Func, typename... Args>
+void tuple_for_each(std::tuple<Args...> const& tuple, Func&& f)
+{
+    tuple_for_each_impl(tuple, f, std::index_sequence_for<Args...>{});
+}
+
+template <typename... Args>
+void print(std::ostream& os, std::tuple<Args...> const& tuple)
+{
+    auto printer = [&os](auto i, auto el) {
+        os << (i == 0 ? "" : ", ") << el;
+        return 0;
+    };
+    return tuple_for_each(tuple, printer);
+}
+
 #+END_SRC
