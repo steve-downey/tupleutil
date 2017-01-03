@@ -10,23 +10,6 @@
 
 namespace tupleutil {
 
-template <typename... Args, std::size_t... I>
-constexpr std::array<std::variant<Args...>, sizeof...(Args)>
-tuple_to_array_impl(std::tuple<Args...> const& tuple,
-                    std::index_sequence<I...>)
-{
-    using V = std::variant<Args...>;
-    std::array<V, sizeof...(Args)> array = {{V(std::get<I>(tuple))...}};
-    return array;
-}
-
-template <typename... Args>
-constexpr std::array<std::variant<Args...>, sizeof...(Args)>
-tuple_to_array(std::tuple<Args...> const& tuple)
-{
-    return tuple_to_array_impl(tuple, std::index_sequence_for<Args...>{});
-}
-
 template <typename Func, typename Tuple, std::size_t... I>
 void tuple_for_each_impl(Tuple&& tuple, Func&& f, std::index_sequence<I...>)
 {
@@ -65,6 +48,23 @@ template <typename Func, typename... Args>
 auto tuple_transform(std::tuple<Args...> const& tuple, Func&& f)
 {
     return tuple_transform_impl(tuple, f, std::index_sequence_for<Args...>{});
+}
+
+template <typename... Args, std::size_t... I>
+constexpr std::array<std::variant<Args...>, sizeof...(Args)>
+tuple_to_array_impl(std::tuple<Args...> const& tuple,
+                    std::index_sequence<I...>)
+{
+    using V = std::variant<Args...>;
+    std::array<V, sizeof...(Args)> array = {{V(std::get<I>(tuple))...}};
+    return array;
+}
+
+template <typename... Args>
+constexpr std::array<std::variant<Args...>, sizeof...(Args)>
+tuple_to_array(std::tuple<Args...> const& tuple)
+{
+    return tuple_to_array_impl(tuple, std::index_sequence_for<Args...>{});
 }
 
 template <typename V, typename T, size_t I> auto get_getter()

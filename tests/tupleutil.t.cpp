@@ -27,20 +27,27 @@ TEST(TupleTest, for_each)
 TEST(TupleTest, transform)
 {
     constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
-    auto arr = tupleutil::tuple_to_array(t);
-    int  i   = std::get<int>(arr[0]);
-    // static_assert(i == 1);
-    EXPECT_EQ(1, i);
-
     auto transform =
         tupleutil::tuple_transform(t, [](auto i) { return i + 1; });
     tupleutil::print(std::cout, transform);
     std::cout << '\n';
 
+    EXPECT_EQ(3.3, std::get<1>(transform));
+
     auto t2 = tupleutil::tuple_transform(std::make_tuple(4, 5.0),
                                          [](auto i) { return i + 1; });
     tupleutil::print(std::cout, t2);
     std::cout << '\n';
+    EXPECT_EQ(6, std::get<1>(t2));
+}
+
+TEST(TupleTest, to_array)
+{
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    auto arr = tupleutil::tuple_to_array(t);
+    int  i   = std::get<int>(arr[0]);
+    // static_assert(i == 1);
+    EXPECT_EQ(1, i);
 }
 
 TEST(TupleTest, getters)
@@ -57,8 +64,10 @@ TEST(TupleTest, getters)
 TEST(TupleTest, gettersStatic)
 {
     constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
-
+    std::variant<int, double, long> v0{1};
     auto v = tupleutil::get(0, t);
+    EXPECT_EQ(v0, v);
+
     int  i = std::get<0>(v);
     EXPECT_EQ(1, i);
 

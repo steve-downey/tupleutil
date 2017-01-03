@@ -76,7 +76,7 @@ auto getElement(size_t i, std::tuple<Types...> tuple) -> std::variant<Types...>;
 
 That is, something that will get me the i_{th} element of a tuple, as a variant with the same typelist as the tuple, with the index determined at runtime. All of the normal accessors are compile time. So need to do something that will make the compile time information available at runtime.
 
-Start with something I do know how to do, the standard idiom for printing a tuple.
+Start with something I do know how to do, idiomatically printing a tuple.
 #+BEGIN_SRC C++ :exports code
 
 template <typename Func, typename Tuple, std::size_t... I>
@@ -105,3 +105,5 @@ void print(std::ostream& os, std::tuple<Args...> const& tuple)
 }
 
 #+END_SRC
+
+Actually, a bit more complicated than the totally standard idiom, since it factors out the printer into a application across the tuple, but it's not much more compilcated. The tuple_for_each constructs an index sequence based on the argument list, and delegates that to the impl, which uses it to apply the function to each element of the tuple. The _impl ought to be in a nested detail namespace, so as not to leak out. Swallow is the typical name for using an otherwise unnamed, and uninteresting, type to apply something to each element of the tuple for a side-effect. The void cast is to make sure the variable is used, and is evaluated.
