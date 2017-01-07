@@ -145,4 +145,54 @@ auto t2 = tupleutil::tuple_transform(std::make_tuple(4, 5.0),
 EXPECT_EQ(6, std::get<1>(t2));
 #+END_SRC
 
-So, for functions over all the types in a tuple, tuple is a Functor. That is, we can apply the function to all elements in the tuple, and it's just like making a tuple out of applying the functions to elements before making the tuple. Functor sounds more impressive.
+So, for functions over all the types in a tuple, tuple is a Functor. That is, we can apply the function to all elements in the tuple, and it's just like making a tuple out of applying the functions to elements before making the tuple. If this sounds like a trivial distinction, you are mostly right. Almost all container-ish things are Functors, and a few non-containerish things are also. Plus Functor sounds more impressive.
+
+The transform also suggests a way of solving the problem I was originally looking at. An array of the elements of the tuple each as a variant will let me permute them with std tools.
+
+#+BEGIN_SRC C++
+
+template <typename... Args, std::size_t... I>
+constexpr std::array<std::variant<Args...>, sizeof...(Args)>
+tuple_to_array_impl(std::tuple<Args...> const& tuple,
+                    std::index_sequence<I...>)
+{
+    using V = std::variant<Args...>;
+    std::array<V, sizeof...(Args)> array = {
+        {V(std::in_place_index_t<I>{}, std::get<I>(tuple))...}};
+    return array;
+}
+
+template <typename... Args>
+constexpr std::array<std::variant<Args...>, sizeof...(Args)>
+tuple_to_array(std::tuple<Args...> const& tuple)
+
+{
+    return tuple_to_array_impl(tuple, std::index_sequence_for<Args...>{});
+}
+
+#+END_SRC
+
+And that can be used something like:
+
+#+BEGIN_SRC C++
+TEST(TupleTest, to_array)
+{
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    auto arr = tupleutil::tuple_to_array(t);
+    int  i   = std::get<int>(arr[0]);
+    EXPECT_EQ(1, i);
+}
+
+TEST(TupleTest, to_array_repeated)
+{
+    constexpr std::tuple<int, int, int> t = std::make_tuple(1, 2, 3);
+    auto arr = tupleutil::tuple_to_array(t);
+    int  i   = std::get<2>(arr[2]);
+    EXPECT_EQ(3, i);
+}
+
+#+END_SRC
+
+The second test is there because I was about to write, "as you can see, we can tell the differece between variants holding the same type", except that wasn't true. The original version of to_array didn't use the constructor form with std::in_place_index_t. The code I ended up with did, but not at this point. There's nothing like writing out what something is supposed to do to make you look and keep you honest.
+
+So here, we're constructing an array of std::variant<Args...> and constructing each member with the argument pack expansion into the std::variant constructor using the I_{th} index value to get that element of the tuple, and recording that we're constructing the i_{th} alternative of the variant. The second test checks that. The 2nd element of the array must be the 2nd variant of the tuple, and can be retrieved only by std::get<2>().
