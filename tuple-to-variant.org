@@ -107,3 +107,42 @@ void print(std::ostream& os, std::tuple<Args...> const& tuple)
 #+END_SRC
 
 Actually, a bit more complicated than the totally standard idiom, since it factors out the printer into a application across the tuple, but it's not much more compilcated. The tuple_for_each constructs an index sequence based on the argument list, and delegates that to the impl, which uses it to apply the function to each element of the tuple. The _impl ought to be in a nested detail namespace, so as not to leak out. Swallow is the typical name for using an otherwise unnamed, and uninteresting, type to apply something to each element of the tuple for a side-effect. The void cast is to make sure the variable is used, and is evaluated.
+
+The next step is, instead of an application of a function for its side-effect, instead a mapping of the tuple, returning the transformed tuple.
+#+BEGIN_SRC C++ :exports code
+template <typename Func, typename Tuple, std::size_t... I>
+auto tuple_transform_impl(Tuple&& tuple, Func&& f, std::index_sequence<I...>)
+{
+    return std::make_tuple(
+        std::forward<Func>(f)(std::get<I>(std::forward<Tuple>(tuple)))...);
+}
+
+template <typename Func, typename... Args>
+auto tuple_transform(std::tuple<Args...>&& tuple, Func&& f)
+{
+    return tuple_transform_impl(tuple, f, std::index_sequence_for<Args...>{});
+}
+
+template <typename Func, typename... Args>
+auto tuple_transform(std::tuple<Args...> const& tuple, Func&& f)
+{
+    return tuple_transform_impl(tuple, f, std::index_sequence_for<Args...>{});
+}
+
+#+END_SRC
+
+Because the std::tuple is not a template parameter, I have to supply a const& and a forwarding-reference form to cover both cases. And I'm ignoring volatile quals. The _impl function uses forwarding-reference parameters, which will decay or forward properly using std::forward. Using it is straightforward.
+
+#+BEGIN_SRC C++ :exports code
+std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+auto transform = tupleutil::tuple_transform(t,
+                                            [](auto i) { return i + 1; });
+
+EXPECT_EQ(3.3, std::get<1>(transform));
+
+auto t2 = tupleutil::tuple_transform(std::make_tuple(4, 5.0),
+                                     [](auto i) { return i + 1; });
+EXPECT_EQ(6, std::get<1>(t2));
+#+END_SRC
+
+So, for functions over all the types in a tuple, tuple is a Functor. That is, we can apply the function to all elements in the tuple, and it's just like making a tuple out of applying the functions to elements before making the tuple. Functor sounds more impressive.
