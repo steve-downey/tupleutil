@@ -56,7 +56,8 @@ tuple_to_array_impl(std::tuple<Args...> const& tuple,
                     std::index_sequence<I...>)
 {
     using V = std::variant<Args...>;
-    std::array<V, sizeof...(Args)> array = {{V(std::get<I>(tuple))...}};
+    std::array<V, sizeof...(Args)> array = {
+        {V(std::in_place_index_t<I>{}, std::get<I>(tuple))...}};
     return array;
 }
 

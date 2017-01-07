@@ -50,6 +50,15 @@ TEST(TupleTest, to_array)
     EXPECT_EQ(1, i);
 }
 
+TEST(TupleTest, to_array_repeated)
+{
+    constexpr std::tuple<int, int, int> t = std::make_tuple(1, 2, 3);
+    auto arr = tupleutil::tuple_to_array(t);
+    int  i   = std::get<2>(arr[2]);
+    // static_assert(i == 1);
+    EXPECT_EQ(3, i);
+}
+
 TEST(TupleTest, getters)
 {
     constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
