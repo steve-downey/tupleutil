@@ -46,7 +46,6 @@ TEST(TupleTest, to_array)
     constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
     auto arr = tupleutil::tuple_to_array(t);
     int  i   = std::get<int>(arr[0]);
-    // static_assert(i == 1);
     EXPECT_EQ(1, i);
 }
 
@@ -55,7 +54,13 @@ TEST(TupleTest, to_array_repeated)
     constexpr std::tuple<int, int, int> t = std::make_tuple(1, 2, 3);
     auto arr = tupleutil::tuple_to_array(t);
     int  i   = std::get<2>(arr[2]);
-    // static_assert(i == 1);
+    EXPECT_EQ(3, i);
+}
+
+TEST(TupleTest, to_array_repeated_tmp)
+{
+    auto arr = tupleutil::tuple_to_array(std::make_tuple(1, 2, 3));
+    int  i   = std::get<2>(arr[2]);
     EXPECT_EQ(3, i);
 }
 
@@ -68,6 +73,18 @@ TEST(TupleTest, getters)
     auto v      = getter(t);
     int  i      = std::get<0>(v);
     EXPECT_EQ(1, i);
+}
+
+TEST(TupleTest, gettersDupTypes)
+{
+    auto t   = std::make_tuple(1, 2, 3, 4);
+    auto arr = tupleutil::tuple_getters(t);
+
+    auto getter = arr[3];
+    auto v      = getter(t);
+    EXPECT_EQ(3ul, v.index());
+    int i = std::get<3>(v);
+    EXPECT_EQ(4, i);
 }
 
 TEST(TupleTest, gettersStatic)
@@ -94,15 +111,4 @@ TEST(TupleTest, gettersStatic)
     EXPECT_EQ(2.4, d2);
 }
 
-TEST(TupleTest, gettersDupTypes)
-{
-    auto t   = std::make_tuple(1, 2, 3, 4);
-    auto arr = tupleutil::tuple_getters(t);
-
-    auto getter = arr[3];
-    auto v      = getter(t);
-    EXPECT_EQ(3ul, v.index());
-    int i = std::get<3>(v);
-    EXPECT_EQ(4, i);
-}
 }
