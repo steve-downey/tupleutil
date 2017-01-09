@@ -193,6 +193,94 @@ TEST(TupleTest, to_array_repeated)
 
 #+END_SRC
 
-The second test is there because I was about to write, "as you can see, we can tell the differece between variants holding the same type", except that wasn't true. The original version of to_array didn't use the constructor form with std::in_place_index_t. The code I ended up with did, but not at this point. There's nothing like writing out what something is supposed to do to make you look and keep you honest.
+The second test is there because I was about to write, "as you can see, we can tell the differece between variants holding the same type", except that wasn't true. The original version of to_ar
+#+BEGIN_SRC C++
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    std::variant<int, double, long> v0{1};
+    auto v = tupleutil::get(0, t);
+    EXPECT_EQ(v0, v);
+#+END_SRC
+ray didn't use the constructor form with std::in_place_index_t. The code I ended up with did, but not at this point. There's nothing like writing out what something is supposed to do to make you look and keep you honest.
 
 So here, we're constructing an array of std::variant<Args...> and constructing each member with the argument pack expansion into the std::variant constructor using the I_{th} index value to get that element of the tuple, and recording that we're constructing the i_{th} alternative of the variant. The second test checks that. The 2nd element of the array must be the 2nd variant of the tuple, and can be retrieved only by std::get<2>().
+
+This would allow me to permutate the elements of a tuple, but I'm fairly close now to being able to writing a version that allows choice of the element at runtime, rather than at compile time.
+
+#+BEGIN_SRC C++
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    std::variant<int, double, long> v0{1};
+    auto v = tupleutil::get(0, t);
+    EXPECT_EQ(v0, v);
+#+END_SRC
+
+What I'm going to do is construct an array of the getters for the tuple, each of which will return the element wrapped in a variant. The signature of the array will be of function pointer type, because, quite conveniently, a non-capturing lambda can decay to a function pointer.
+
+First getting the array of getters for the tuple
+#+BEGIN_SRC C++
+template <typename V, typename T, size_t I> auto get_getter()
+{
+    return [](T const& t) {
+        return V{std::in_place_index_t<I>{}, std::get<I>(t)};
+    };
+}
+
+template <typename... Args, std::size_t... I>
+auto tuple_getters_impl(std::index_sequence<I...>)
+{
+    using V = std::variant<Args...>;
+    using T = std::tuple<Args...>;
+    using F = V (*)(T const&);
+    std::array<F, sizeof...(Args)> array
+        //        = {{[](T const& tuple){return V{std::get<I>(tuple)};}...}};
+        = {{get_getter<V, T, I>()...}};
+    return array;
+}
+
+template <typename... Args> auto tuple_getters(std::tuple<Args...>)
+{
+    return tuple_getters_impl<Args...>(std::index_sequence_for<Args...>{});
+}
+
+#+END_SRC
+
+So first a function that returns a function that constructs a variant around the value of what's returned from std::get<I>. Well, it could return anything that happens to have a constructor that takes a an in_place_index_t, take as the thing to be converted something that std::get<I> can extract from. This is actually a separate function because GCC was unhappy doing the template parameter pack expansion inline in the _impl function. Clang was happy with the expansion noted in the comment. I really have no idea who is wrong here, and the workaround was straight forward. The array is one of function pointers, which the returned lambdas can decay to.
+
+Now the only remaining trick is to use this array as a table to dispatch to the appropriate getter for the tuple.
+
+#+BEGIN_SRC C++
+const auto get = [](size_t i, auto t) {
+    static auto tbl = tupleutil::tuple_getters(t);
+    return tbl[i](t);
+};
+
+#+END_SRC
+
+Get the array as a static, so we only need to computer it once, and simply return src_C++[:exports code]{tbl[i](t)}
+
+#+BEGIN_SRC C++
+TEST(TupleTest, gettersStatic)
+{
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+    std::variant<int, double, long> v0{1};
+    auto v = tupleutil::get(0, t);
+    EXPECT_EQ(v0, v);
+
+    int  i = std::get<0>(v);
+    EXPECT_EQ(1, i);
+
+    auto v2 = tupleutil::get(1, t);
+
+    EXPECT_EQ(1ul, v2.index());
+    double d = std::get<double>(v2);
+
+    EXPECT_EQ(2.3, d);
+
+    constexpr auto t2 = std::make_tuple(2.4, 1l);
+    auto           v3 = tupleutil::get(0, t2);
+    double         d2 = std::get<double>(v3);
+
+    EXPECT_EQ(2.4, d2);
+}
+
+
+#+END_SRC
