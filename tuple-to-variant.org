@@ -72,7 +72,7 @@ From the implementors point of view, supporting pointers and arrays is a huge am
 The C++ standard says "tuples are heterogeneous, fixed-size collections of values" - [tuple.general]. Collections generally have iterator types associated with them, but that's a bit of a challenge since the iterator model in C++ assumes that for a collection, the type of *(Collection<T>::iterator) is T. But if the collection isn't on T, but on Types..., you doesn't quite work to say *(Collection<typename... Types>) is of type ...Types. You need something to hold that. But in many cases, std::variant can work. It doesn't quiet work, since we'd really need a variant of references to the elements of the tuple, so that they could be written to. However, for many purposes we can come close. For the case I was looking at, making copies is perfectly fine. What I'm looking for is something roughly with the signature
 
 #+BEGIN_SRC C++ :exports code
-template <typename... Types
+template <typename... Types>
 auto getElement(size_t i, std::tuple<Types...> tuple) -> std::variant<Types...>;
 #+END_SRC
 
