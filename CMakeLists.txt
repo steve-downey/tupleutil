@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 
 project(TupleUtil C CXX)
+enable_testing()
+
+include(GoogleTest)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

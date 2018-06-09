@@ -5,4 +5,4 @@ set(test_sources
 )
 add_executable(tests ${test_sources})
 target_link_libraries(tests gtest_main tupleutil)
-add_test(NAME Test COMMAND tests)
+gtest_discover_tests(tests)
