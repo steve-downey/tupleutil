@@ -75,6 +75,19 @@ TEST(TupleTest, getters)
     EXPECT_EQ(1, i);
 }
 
+TEST(TupleTest, getters2)
+{
+    using T = std::tuple<int, double, long>;
+    auto arr = tupleutil::tuple_getters<T>();
+
+    constexpr std::tuple<int, double, long> t = std::make_tuple(1, 2.3, 1l);
+
+    auto getter = arr[0];
+    auto v      = getter(t);
+    int  i      = std::get<0>(v);
+    EXPECT_EQ(1, i);
+}
+
 TEST(TupleTest, gettersDupTypes)
 {
     auto t   = std::make_tuple(1, 2, 3, 4);

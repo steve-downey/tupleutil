@@ -97,6 +97,24 @@ const auto get = [](size_t i, auto t) {
     return tbl[i](t);
 };
 
+template <typename T>
+struct TupleGetters {
+    auto operator()();
+};
+
+template<typename ...Types>
+struct TupleGetters<std::tuple<Types...>> {
+    auto operator()() {
+        return tuple_getters_impl<Types...>(std::index_sequence_for<Types...>{});
+    }
+};
+
+template <typename T>
+auto tuple_getters(){
+    TupleGetters<T> g;
+    return g();
+}
+
 template <typename... Args>
 void print(std::ostream& os, std::tuple<Args...> const& tuple)
 {
